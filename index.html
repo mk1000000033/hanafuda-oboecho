@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>花札おぼえ帖</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f6f1e7; --paper2:#efe7d6; --ink:#2a211b; --sub:#7a6e62; --line:#ddd2bf;
+  --shu:#c8372d; --gold:#b8860b; --tane:#2f7d4a; --tan:#c8372d; --kasu:#7a7066; --ao:#2f4fa3;
+  --radius:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"Zen Maru Gothic",system-ui,sans-serif;font-weight:500}
+body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+button{font:inherit;color:inherit;cursor:pointer}
+header.top{position:sticky;top:0;z-index:20;background:rgba(246,241,231,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  padding:calc(10px + env(safe-area-inset-top)) 18px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.logo{width:30px;height:30px;border-radius:7px;background:var(--shu);color:#fff;display:grid;place-items:center;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:17px}
+header h1{margin:0;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:19px;letter-spacing:.06em}
+header .sub{margin-left:auto;font-size:12px;color:var(--sub)}
+main{max-width:720px;margin:0 auto;padding:16px 16px 24px}
+.view{display:none}.view.on{display:block}
+h2.sec{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:21px;margin:6px 0 4px;letter-spacing:.04em}
+p.lead{margin:0 0 14px;color:var(--sub);font-size:13.5px;line-height:1.7}
+
+/* tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fffaf0;border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+nav.tabs button{border:0;background:none;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--sub);border-radius:10px}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button.on{color:var(--shu)}
+nav.tabs button.on .ic{transform:translateY(-1px)}
+
+/* progress */
+.prog{background:#fffaf0;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px}
+.prog .row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--sub)}
+.prog b{font-size:20px;color:var(--ink);font-family:"Shippori Mincho B1",serif}
+.bar{height:8px;background:var(--paper2);border-radius:99px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--shu),#e0703f);border-radius:99px;transition:width .4s}
+
+/* chips */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:#fffaf0;border-radius:99px;padding:6px 13px;font-size:13px}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);margin:6px 0 12px}
+.toggle input{width:18px;height:18px;accent-color:var(--shu)}
+
+/* month blocks */
+.month{margin-bottom:18px}
+.mhead{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.mnum{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:22px;color:var(--shu)}
+.mname{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:17px}
+.myomi{font-size:12px;color:var(--sub)}
+.mhint{font-size:12.5px;color:var(--sub);line-height:1.6;margin:0 0 8px}
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.fcell{border:0;background:none;padding:0;text-align:center;position:relative}
+.fcell .lbl{font-size:11px;line-height:1.35;margin-top:5px;min-height:2.7em}
+.fcell .lbl .nm{display:block}
+.hide-names .fcell .nm{visibility:hidden}
+.done-mark{position:absolute;top:-5px;right:-5px;width:20px;height:20px;border-radius:50%;background:var(--tane);color:#fff;font-size:12px;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.card-svg{width:100%;height:auto;aspect-ratio:976/1600;display:block;-webkit-user-select:none;user-select:none;filter:drop-shadow(0 2px 3px rgba(60,40,20,.25));border-radius:4px}
+.fcell:active .card-svg{transform:scale(.96)}
+.badge{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:99px;color:#fff;font-weight:700;letter-spacing:.05em}
+.b-hikari{background:var(--gold)}.b-tane{background:var(--tane)}.b-tan{background:var(--tan)}.b-kasu{background:var(--kasu)}
+
+/* sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(30,20,10,.45);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.sheet-bg.on{display:flex}
+.sheet{background:var(--paper);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto;animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.sheet .grip{width:40px;height:5px;border-radius:9px;background:var(--line);margin:-6px auto 12px}
+.dtop{display:flex;gap:16px;align-items:flex-start}
+.dtop .big{width:120px;flex:none}
+.dname{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:22px;margin:2px 0 6px}
+.dl{font-size:13px;line-height:1.8;color:var(--sub)}
+.dl b{color:var(--ink)}
+.note{background:#fffaf0;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.7;margin-top:14px}
+.note h4{margin:0 0 4px;font-size:12px;color:var(--shu)}
+.ylink{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.ylink:last-child{border-bottom:0}
+.mon{font-family:"Shippori Mincho B1",serif;font-weight:800;color:var(--shu)}
+.closebtn{margin-top:16px;width:100%;border:1px solid var(--line);background:#fffaf0;border-radius:12px;padding:12px;font-size:15px}
+
+/* yaku */
+details.rules{background:#fffaf0;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px}
+details.rules summary{font-weight:700;font-size:15px;list-style:none;display:flex;justify-content:space-between}
+details.rules summary::after{content:"＋";color:var(--shu)}
+details.rules[open] summary::after{content:"－"}
+details.rules ol{padding-left:1.3em;margin:10px 0 0;font-size:13.5px;line-height:1.8}
+.ycard{background:#fffaf0;border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.ycard .yh{display:flex;align-items:baseline;gap:8px}
+.ycard .yn{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:19px}
+.ycard .yy{font-size:12px;color:var(--sub)}
+.ycard .ym{margin-left:auto;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:20px;color:var(--shu);white-space:nowrap}
+.ycard .ym small{font-size:12px}
+.ycard .yd{font-size:13.5px;line-height:1.7;margin:6px 0 10px}
+.ycard .yx{font-size:12px;color:var(--sub);line-height:1.6;margin-top:8px}
+.minirow{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 6px}
+.minirow .mini{width:44px;flex:none}
+.ygroup{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.1em;margin:18px 0 8px}
+.foot{font-size:12px;color:var(--sub);line-height:1.7;margin-top:10px}
+
+/* quiz */
+.qmodes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qmode{border:1px solid var(--line);background:#fffaf0;border-radius:var(--radius);padding:14px 12px;text-align:left;min-height:96px;display:flex;flex-direction:column;gap:4px}
+.qmode .t{font-weight:700;font-size:15px}
+.qmode .d{font-size:12px;color:var(--sub);line-height:1.5}
+.qmode .best{margin-top:auto;font-size:11px;color:var(--shu)}
+.qmode.wide{grid-column:1/-1;background:var(--ink);color:#fff;border-color:var(--ink)}
+.qmode.wide .d{color:#d8cfc2}
+.qtop{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub);margin-bottom:10px}
+.qtop button{border:0;background:none;color:var(--sub);font-size:13px;padding:4px}
+.qbar{height:5px;background:var(--paper2);border-radius:9px;overflow:hidden;margin-bottom:16px}
+.qbar i{display:block;height:100%;background:var(--shu);transition:width .3s}
+.qq{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:20px;text-align:center;margin:0 0 14px;line-height:1.5}
+.qshow{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.qshow .one{width:150px}
+.qshow .many{width:58px}
+.qshow .ybig{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:30px;padding:18px 0;color:var(--shu)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{border:1.5px solid var(--line);background:#fffaf0;border-radius:12px;padding:14px 8px;font-size:15px;font-weight:700;min-height:56px}
+.opt.ok{border-color:var(--tane);background:#e6f2e9;color:var(--tane)}
+.opt.ng{border-color:var(--shu);background:#f8e3df;color:var(--shu)}
+.opt:disabled{cursor:default}
+.fb{margin-top:14px;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.7;display:none}
+.fb.on{display:block}
+.fb.good{background:#e6f2e9}.fb.bad{background:#f8e3df}
+.fb .h{font-weight:700;font-size:15px;margin-bottom:2px}
+.nextbtn{display:none;width:100%;margin-top:12px;border:0;background:var(--ink);color:#fff;border-radius:12px;padding:14px;font-size:16px;font-weight:700}
+.nextbtn.on{display:block}
+.result{text-align:center;padding:10px 0}
+.result .sc{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:56px;color:var(--shu);line-height:1}
+.result .sc small{font-size:20px;color:var(--ink)}
+.result .msg{margin:10px 0 18px;font-size:15px}
+.miss{display:flex;gap:10px;align-items:center;text-align:left;background:#fffaf0;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;font-size:13px;line-height:1.5}
+.miss .mc{width:40px;flex:none}
+.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.btn{border:1px solid var(--line);background:#fffaf0;border-radius:12px;padding:13px;font-size:15px;font-weight:700}
+.btn.primary{background:var(--shu);color:#fff;border-color:var(--shu)}
+
+/* checker */
+.sum{position:sticky;top:calc(52px + env(safe-area-inset-top));z-index:10;background:var(--ink);color:#fff;border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.sum .row{display:flex;align-items:center;gap:10px}
+.sum .tot{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:28px;line-height:1}
+.sum .tot small{font-size:13px}
+.sum .cnt{font-size:12px;color:#cfc5b8}
+.sum .clr{margin-left:auto;border:1px solid #6d6258;background:none;color:#fff;border-radius:99px;padding:5px 12px;font-size:12px}
+.ychips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:24px}
+.ychip{background:var(--shu);border-radius:99px;padding:3px 10px;font-size:12.5px;font-weight:700}
+.ychip.none{background:none;color:#a99e90;padding:3px 0;font-weight:500}
+.tgroup{margin-bottom:14px}
+.tgroup h3{font-size:13px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.pick{border:0;background:none;padding:0;position:relative;opacity:.55;transition:opacity .15s,transform .15s}
+.pick.on{opacity:1;transform:translateY(-3px)}
+.pick.on::after{content:"";position:absolute;inset:-3px;border:2.5px solid var(--shu);border-radius:7px}
+@media (min-width:600px){.cards4{gap:16px}.grid6{grid-template-columns:repeat(8,1fr)}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo">花</div>
+  <h1>花札おぼえ帖</h1>
+  <span class="sub" id="hdrSub"></span>
+</header>
+
+<main>
+  <section class="view" id="v-fuda">
+    <h2 class="sec">札図鑑</h2>
+    <p class="lead">花札は12か月×4枚の48枚。札をタップすると、種類・覚え方・関わる役が見られます。</p>
+    <div class="prog"><div class="row"><span>覚えた札</span><span><b id="mastN">0</b> / 48</span></div><div class="bar"><i id="mastBar" style="width:0"></i></div></div>
+    <div class="chips" id="fudaFilter"></div>
+    <label class="toggle"><input type="checkbox" id="hideNames"> 名前をかくして自分でテスト</label>
+    <div id="fudaList"></div>
+    <p class="foot" style="margin-top:24px">札の画像：Louie Mantia、すけじょ、Spenĉjo 作「<a href="https://commons.wikimedia.org/wiki/Category:SVG_Hanafuda_with_traditional_colors_(black_border)" target="_blank" rel="noopener" style="color:inherit">SVG Hanafuda with traditional colors (black border)</a>」（Wikimedia Commons）／ライセンス <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja" target="_blank" rel="noopener" style="color:inherit">CC BY-SA 4.0</a></p>
+  </section>
+
+  <section class="view" id="v-yaku">
+    <h2 class="sec">こいこいの役</h2>
+    <p class="lead">よく使われる点数（文）で紹介しています。地域やアプリによって点数が少し違うことがあります。</p>
+    <details class="rules">
+      <summary>こいこいの遊び方（ざっくり）</summary>
+      <ol>
+        <li>2人で遊ぶ。手札8枚ずつ、場に8枚を表向きに並べる。</li>
+        <li>自分の番は「手札を1枚出す → 山札を1枚めくる」。どちらも場に<b>同じ月の札</b>があれば合わせて取れる。</li>
+        <li>取った札で<b>役</b>ができたら、「勝負」で終わって得点するか、「こいこい」で続けてさらに役を狙う。</li>
+        <li>こいこいした後に相手が先に役を作ると、相手の得点になる（ルールによっては倍）。</li>
+        <li>7文以上は得点2倍、などの追加ルールもよく使われる。</li>
+      </ol>
+    </details>
+    <div id="yakuList"></div>
+    <p class="foot">※「菊に盃」はタネとしてだけでなく、カスとしても数えるルールが一般的です（役チェッカーで切り替えできます）。<br>※ 五光・四光・雨四光・三光は一番高いもの1つだけが成立します。</p>
+  </section>
+
+  <section class="view" id="v-quiz">
+    <div id="quizHome">
+      <h2 class="sec">クイズ</h2>
+      <p class="lead">1回10問。札の問題で2回続けて正解すると「覚えた札」になります。</p>
+      <div class="qmodes" id="qmodes"></div>
+    </div>
+    <div id="quizPlay" style="display:none"></div>
+  </section>
+
+  <section class="view" id="v-check">
+    <h2 class="sec">役チェッカー</h2>
+    <p class="lead">取った札をタップして選ぶと、できている役と合計点がわかります。</p>
+    <div class="sum">
+      <div class="row"><div class="tot"><span id="totMon">0</span><small> 文</small></div><div class="cnt" id="selCnt">0枚選択中</div><button class="clr" id="clrBtn">リセット</button></div>
+      <div class="ychips" id="ychips"></div>
+    </div>
+    <label class="toggle"><input type="checkbox" id="kikuKasu" checked> 菊に盃をカスとしても数える</label>
+    <div id="checkGrid"></div>
+  </section>
+</main>
+
+<nav class="tabs" id="tabs">
+  <button data-v="fuda"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="11" height="16" rx="2"/><path d="M9 7h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H11"/></svg>札図鑑</button>
+  <button data-v="yaku"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>役一覧</button>
+  <button data-v="quiz"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6V14"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>クイズ</button>
+  <button data-v="check"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>役チェッカー</button>
+</nav>
+
+<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ============ データ ============ */
+const MONTHS = [
+  null,
+  {p:'松',y:'まつ',w:'睦月',hint:'お正月の門松。1年のはじまりは縁起のいい松と鶴。'},
+  {p:'梅',y:'うめ',w:'如月',hint:'早春に咲く梅。「梅に鶯」はお似合いの組み合わせのたとえ。'},
+  {p:'桜',y:'さくら',w:'弥生',hint:'お花見の季節。宴会の「幕」が張られた札が光札。'},
+  {p:'藤',y:'ふじ',w:'卯月',hint:'藤の花が上から垂れ下がる絵。初夏の鳥ほととぎすが飛ぶ。'},
+  {p:'菖蒲',y:'あやめ',w:'皐月',hint:'端午の節句の菖蒲。八橋は伊勢物語に出てくる名所。'},
+  {p:'牡丹',y:'ぼたん',w:'水無月',hint:'初夏の大きく華やかな花。蝶がひらひら。'},
+  {p:'萩',y:'はぎ',w:'文月',hint:'秋の七草の萩。赤紫の小さな花がしだれる。'},
+  {p:'芒',y:'すすき',w:'葉月',hint:'お月見のすすき。黒い山の形から「坊主」とも呼ばれる。'},
+  {p:'菊',y:'きく',w:'長月',hint:'9月9日の重陽（菊の節句）に菊酒を飲む→だから盃。'},
+  {p:'紅葉',y:'もみじ',w:'神無月',hint:'紅葉狩り。そっぽを向いた鹿は「シカト」の語源と言われる。'},
+  {p:'柳',y:'やなぎ',w:'霜月',hint:'「雨」とも呼ばれる月。札の並びが他の月と違うので要注意。'},
+  {p:'桐',y:'きり',w:'師走',hint:'カスが3枚ある唯一の月。「ピンからキリまで」の語源と言われる。'},
+];
+const TYPES = {hikari:'光',tane:'タネ',tan:'短冊',kasu:'カス'};
+const TYPE_FULL = {hikari:'光札（20点札）',tane:'タネ札（10点札）',tan:'短冊札（5点札）',kasu:'カス札（1点札）'};
+
+// [月, 番号, 名前, 種類, 絵の種類, メモ]
+const RAW = [
+ [1,1,'松に鶴','hikari','crane','赤い太陽と鶴。光札のひとつ。'],
+ [1,2,'松に赤短','tan','aka:あかよろし','「あかよろし」と書かれた赤い短冊。赤短の1枚。'],
+ [1,3,'松のカス','kasu','',''],[1,4,'松のカス','kasu','',''],
+ [2,1,'梅に鶯','tane','uguisu','うぐいす。タネ札。'],
+ [2,2,'梅に赤短','tan','aka:あかよろし','松と同じ「あかよろし」の赤短。'],
+ [2,3,'梅のカス','kasu','',''],[2,4,'梅のカス','kasu','',''],
+ [3,1,'桜に幕','hikari','maku','花見の幕。光札で「花見で一杯」にも使う。'],
+ [3,2,'桜に赤短','tan','aka:みよしの','「みよしの」と書かれた赤短。'],
+ [3,3,'桜のカス','kasu','',''],[3,4,'桜のカス','kasu','',''],
+ [4,1,'藤に不如帰','tane','hototogisu','不如帰＝ほととぎす。月と鳥の絵。'],
+ [4,2,'藤に短冊','tan','red','文字のない赤い短冊（赤短には入らない）。'],
+ [4,3,'藤のカス','kasu','',''],[4,4,'藤のカス','kasu','',''],
+ [5,1,'菖蒲に八橋','tane','yatsuhashi','八橋（やつはし）＝板の橋。タネ札。'],
+ [5,2,'菖蒲に短冊','tan','red','文字のない赤い短冊。'],
+ [5,3,'菖蒲のカス','kasu','',''],[5,4,'菖蒲のカス','kasu','',''],
+ [6,1,'牡丹に蝶','tane','chou','猪鹿蝶の「蝶」。'],
+ [6,2,'牡丹に青短','tan','ao','青い短冊。青短の1枚。'],
+ [6,3,'牡丹のカス','kasu','',''],[6,4,'牡丹のカス','kasu','',''],
+ [7,1,'萩に猪','tane','inoshishi','猪鹿蝶の「猪」。'],
+ [7,2,'萩に短冊','tan','red','文字のない赤い短冊。'],
+ [7,3,'萩のカス','kasu','',''],[7,4,'萩のカス','kasu','',''],
+ [8,1,'芒に月','hikari','moon','赤い空に満月。光札で「月見で一杯」にも使う。'],
+ [8,2,'芒に雁','tane','kari','雁（かり）が3羽飛ぶ。タネ札。'],
+ [8,3,'芒のカス','kasu','',''],[8,4,'芒のカス','kasu','',''],
+ [9,1,'菊に盃','tane','sakazuki','「寿」の盃。花見・月見で一杯の両方に使う万能札。'],
+ [9,2,'菊に青短','tan','ao','青短の1枚。'],
+ [9,3,'菊のカス','kasu','',''],[9,4,'菊のカス','kasu','',''],
+ [10,1,'紅葉に鹿','tane','shika','猪鹿蝶の「鹿」。'],
+ [10,2,'紅葉に青短','tan','ao','青短の1枚。'],
+ [10,3,'紅葉のカス','kasu','',''],[10,4,'紅葉のカス','kasu','',''],
+ [11,1,'柳に小野道風','hikari','michikaze','小野道風（おののみちかぜ）と蛙。「雨」の札で、光札の中でも特別扱い。'],
+ [11,2,'柳に燕','tane','tsubame','つばめ。タネ札。'],
+ [11,3,'柳に短冊','tan','red','文字のない赤い短冊。'],
+ [11,4,'柳のカス','kasu','rai','雷の札とも呼ばれる。柳のカスは1枚だけ。'],
+ [12,1,'桐に鳳凰','hikari','houou','鳳凰（ほうおう）。光札。'],
+ [12,2,'桐のカス','kasu','',''],[12,3,'桐のカス','kasu','yellow','下が黄色い、1枚だけ色ちがいのカス。'],[12,4,'桐のカス','kasu','',''],
+];
+const CARDS = RAW.map(r=>({id:r[0]+'-'+r[1],m:r[0],n:r[1],name:r[2],type:r[3],art:r[4],memo:r[5]}));
+const CARD = Object.fromEntries(CARDS.map(c=>[c.id,c]));
+const ids = f=>CARDS.filter(f).map(c=>c.id);
+const LIGHTS = ids(c=>c.type==='hikari');
+const LIGHTS_NR = LIGHTS.filter(i=>i!=='11-1');
+const TANE = ids(c=>c.type==='tane');
+const TAN = ids(c=>c.type==='tan');
+const KASU = ids(c=>c.type==='kasu');
+const AKA = ['1-2','2-2','3-2'], AO = ['6-2','9-2','10-2'], ISC = ['7-1','10-1','6-1'];
+
+const YAKU = [
+ {k:'goko',n:'五光',y:'ごこう',mon:10,g:'光の役',d:'光札5枚をすべて集める。',ex:LIGHTS,mem:LIGHTS},
+ {k:'shiko',n:'四光',y:'しこう',mon:8,g:'光の役',d:'「柳に小野道風（雨）」以外の光札4枚。',ex:LIGHTS_NR,mem:LIGHTS_NR},
+ {k:'ameshiko',n:'雨四光',y:'あめしこう',mon:7,g:'光の役',d:'「柳に小野道風（雨）」を含む光札4枚。雨が入る分、四光より低い。',ex:['11-1','1-1','3-1','8-1'],mem:LIGHTS},
+ {k:'sanko',n:'三光',y:'さんこう',mon:5,g:'光の役',d:'「雨」以外の光札3枚。雨を含む3枚では役にならない。',ex:['1-1','3-1','8-1'],mem:LIGHTS_NR},
+ {k:'hanami',n:'花見で一杯',y:'はなみでいっぱい',mon:5,g:'組み合わせの役',d:'「桜に幕」＋「菊に盃」。お花見でお酒を一杯。',ex:['3-1','9-1'],mem:['3-1','9-1']},
+ {k:'tsukimi',n:'月見で一杯',y:'つきみでいっぱい',mon:5,g:'組み合わせの役',d:'「芒に月」＋「菊に盃」。お月見でお酒を一杯。',ex:['8-1','9-1'],mem:['8-1','9-1']},
+ {k:'isc',n:'猪鹿蝶',y:'いのしかちょう',mon:5,g:'組み合わせの役',d:'「萩に猪」「紅葉に鹿」「牡丹に蝶」の3枚。',ex:ISC,mem:ISC},
+ {k:'akatan',n:'赤短',y:'あかたん',mon:5,g:'短冊の役',d:'文字の書かれた赤い短冊3枚（松・梅・桜）。',ex:AKA,mem:AKA},
+ {k:'aotan',n:'青短',y:'あおたん',mon:5,g:'短冊の役',d:'青い短冊3枚（牡丹・菊・紅葉）。',ex:AO,mem:AO},
+ {k:'akaao',n:'赤短・青短の重複',y:'あかたん・あおたんのちょうふく',mon:10,g:'短冊の役',d:'赤短と青短を両方そろえる（合計6枚）。',ex:[...AKA,...AO],mem:[...AKA,...AO]},
+ {k:'tane',n:'タネ',y:'たね',mon:1,plus:true,g:'枚数の役',d:'タネ札を5枚集める。1枚増えるごとに＋1文。',ex:['2-1','4-1','5-1','8-2','11-2'],mem:TANE},
+ {k:'tan',n:'タン',y:'たん',mon:1,plus:true,g:'枚数の役',d:'短冊札を5枚集める。1枚増えるごとに＋1文。',ex:['1-2','4-2','5-2','7-2','11-3'],mem:TAN},
+ {k:'kasu',n:'カス',y:'かす',mon:1,plus:true,g:'枚数の役',d:'カス札を10枚集める。1枚増えるごとに＋1文。',ex:['1-3','2-3','3-3','4-3','5-3','6-3','7-3','8-3','11-4','12-2'],mem:[...KASU,'9-1']},
+];
+const YK = Object.fromEntries(YAKU.map(y=>[y.k,y]));
+
+function evaluate(sel, kikuKasu=true){
+  const s = new Set(sel), has = i=>s.has(i), cnt = arr=>arr.filter(has).length;
+  const res = [];
+  const L = cnt(LIGHTS), rain = has('11-1');
+  if(L===5) res.push(['goko',10]);
+  else if(L===4) res.push(rain?['ameshiko',7]:['shiko',8]);
+  else if(L===3 && !rain) res.push(['sanko',5]);
+  if(has('3-1')&&has('9-1')) res.push(['hanami',5]);
+  if(has('8-1')&&has('9-1')) res.push(['tsukimi',5]);
+  if(ISC.every(has)) res.push(['isc',5]);
+  const aka = AKA.every(has), ao = AO.every(has);
+  if(aka&&ao) res.push(['akaao',10]); else { if(aka) res.push(['akatan',5]); if(ao) res.push(['aotan',5]); }
+  const t = cnt(TANE); if(t>=5) res.push(['tane',1+t-5]);
+  const d = cnt(TAN); if(d>=5) res.push(['tan',1+d-5]);
+  const k = cnt(KASU) + (kikuKasu&&has('9-1')?1:0); if(k>=10) res.push(['kasu',1+k-10]);
+  return res;
+}
+
+/* ============ 札の絵（Wikimedia Commons / CC BY-SA 4.0） ============ */
+function cardSVG(c, cls='card-svg'){
+  const i=(c.m-1)*4+(c.n-1);
+  return `<img class="${cls}" src="cards/${i}.svg" alt="${c.name}" width="976" height="1600" loading="lazy" decoding="async" draggable="false">`;
+}
+/* ============ 保存 ============ */
+const store = {
+  get(k,d){try{const v=localStorage.getItem('hanafuda:'+k);return v?JSON.parse(v):d;}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem('hanafuda:'+k,JSON.stringify(v));}catch(e){}}
+};
+let mastery = store.get('mastery',{}); // id -> 連続正解数
+let best = store.get('best',{});
+const isMastered = id=>(mastery[id]||0)>=2;
+
+/* ============ 共通 ============ */
+const $ = s=>document.querySelector(s);
+const shuffle = a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const pick = (a,n)=>shuffle(a).slice(0,n);
+const mLabel = m=>`${m}月（${MONTHS[m].p}）`;
+const typeBadge = t=>`<span class="badge b-${t}">${TYPES[t]}</span>`;
+
+/* ============ 札図鑑 ============ */
+let fudaFilter='all';
+function renderFilter(){
+  const opts=[['all','すべて'],['hikari','光'],['tane','タネ'],['tan','短冊'],['kasu','カス'],['todo','まだ覚えてない']];
+  $('#fudaFilter').innerHTML=opts.map(([k,l])=>`<button class="chip ${fudaFilter===k?'on':''}" data-f="${k}">${l}</button>`).join('');
+}
+function renderFuda(){
+  renderFilter();
+  const n = CARDS.filter(c=>isMastered(c.id)).length;
+  $('#mastN').textContent=n; $('#mastBar').style.width=(n/48*100)+'%';
+  $('#hdrSub').textContent=`覚えた札 ${n}/48`;
+  let h='';
+  for(let m=1;m<=12;m++){
+    const cs = CARDS.filter(c=>c.m===m && (fudaFilter==='all'||(fudaFilter==='todo'?!isMastered(c.id):c.type===fudaFilter)));
+    if(!cs.length) continue;
+    const M=MONTHS[m];
+    h+=`<div class="month"><div class="mhead"><span class="mnum">${m}月</span><span class="mname">${M.p}</span><span class="myomi">${M.y}・${M.w}</span></div><p class="mhint">${M.hint}</p><div class="cards4">`;
+    h+=cs.map(c=>`<button class="fcell" data-id="${c.id}">${isMastered(c.id)?'<span class="done-mark">✓</span>':''}${cardSVG(c)}<div class="lbl">${typeBadge(c.type)}<span class="nm">${c.name}</span></div></button>`).join('');
+    h+=`</div></div>`;
+  }
+  $('#fudaList').innerHTML=h||'<p class="lead">ぜんぶ覚えました！🎉</p>';
+}
+$('#fudaFilter').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;fudaFilter=b.dataset.f;renderFuda();});
+$('#hideNames').addEventListener('change',e=>$('#fudaList').classList.toggle('hide-names',e.target.checked));
+$('#fudaList').addEventListener('click',e=>{const b=e.target.closest('.fcell');if(b)openCard(b.dataset.id);});
+
+function openCard(id){
+  const c=CARD[id], M=MONTHS[c.m];
+  const ys = YAKU.filter(y=>y.mem.includes(id));
+  $('#sheet').innerHTML=`<div class="grip"></div>
+   <div class="dtop"><div class="big">${cardSVG(c)}</div><div>
+     <div class="dname">${c.name}</div>
+     <div class="dl">${typeBadge(c.type)}<br><b>${c.m}月</b>・${M.p}（${M.y}）<br>${TYPE_FULL[c.type]}<br>${isMastered(id)?'<span style="color:var(--tane)">✓ 覚えた</span>':'まだ練習中'}</div>
+   </div></div>
+   ${c.memo?`<div class="note"><h4>この札のポイント</h4>${c.memo}</div>`:''}
+   <div class="note"><h4>${c.m}月の覚え方</h4>${M.hint}</div>
+   <div class="note"><h4>関わる役</h4>${ys.length?ys.map(y=>`<div class="ylink"><span>${y.n}</span><span class="mon">${y.mon}文${y.plus?'〜':''}</span></div>`).join(''):'この札だけで関わる役はありません'}</div>
+   <button class="closebtn" id="closeSheet">閉じる</button>`;
+  $('#sheetBg').classList.add('on');
+}
+$('#sheetBg').addEventListener('click',e=>{if(e.target.id==='sheetBg'||e.target.id==='closeSheet')$('#sheetBg').classList.remove('on');});
+
+/* ============ 役一覧 ============ */
+function renderYaku(){
+  let h='',g='';
+  YAKU.forEach(y=>{
+    if(y.g!==g){g=y.g;h+=`<div class="ygroup">${g}</div>`;}
+    h+=`<div class="ycard"><div class="yh"><span class="yn">${y.n}</span><span class="yy">${y.y}</span><span class="ym">${y.mon}<small>文${y.plus?'〜':''}</small></span></div>
+     <div class="yd">${y.d}</div><div class="minirow">${y.ex.map(i=>`<button class="mini fcell" data-id="${i}">${cardSVG(CARD[i])}</button>`).join('')}</div>
+     ${y.k==='sanko'?'<div class="yx">例：松に鶴・桜に幕・芒に月 など、雨以外ならどの3枚でもOK</div>':''}
+     ${y.plus?'<div class="yx">上は一例。どのタネ・短冊・カスでも枚数がそろえばOK</div>':''}</div>`;
+  });
+  $('#yakuList').innerHTML=h;
+}
+$('#yakuList').addEventListener('click',e=>{const b=e.target.closest('.fcell');if(b)openCard(b.dataset.id);});
+
+/* ============ クイズ ============ */
+const MODES = [
+  {k:'mix',t:'おまかせミックス',d:'札と役の問題をまぜて10問',wide:true},
+  {k:'month',t:'何月の札？',d:'絵を見て月を答える'},
+  {k:'type',t:'札の種類は？',d:'光・タネ・短冊・カス'},
+  {k:'name',t:'札の名前は？',d:'「松に鶴」など名前を当てる'},
+  {k:'yaku',t:'何の役？',d:'札の組み合わせから役を当てる'},
+  {k:'mon',t:'何文？',d:'役の点数を当てる'},
+  {k:'weak',t:'まだ覚えてない札',d:'覚えていない札だけ出題'},
+];
+function renderQuizHome(){
+  $('#quizHome').style.display='';$('#quizPlay').style.display='none';
+  $('#qmodes').innerHTML=MODES.map(m=>`<button class="qmode ${m.wide?'wide':''}" data-k="${m.k}"><span class="t">${m.t}</span><span class="d">${m.d}</span>${best[m.k]!=null?`<span class="best">ベスト ${best[m.k]}/10</span>`:''}</button>`).join('');
+}
+$('#qmodes').addEventListener('click',e=>{const b=e.target.closest('.qmode');if(b)startQuiz(b.dataset.k);});
+
+function yakuSet(k){
+  switch(k){
+    case 'goko': return [...LIGHTS];
+    case 'shiko': return [...LIGHTS_NR];
+    case 'ameshiko': return ['11-1',...pick(LIGHTS_NR,3)];
+    case 'sanko': return pick(LIGHTS_NR,3);
+    case 'hanami': return ['3-1','9-1'];
+    case 'tsukimi': return ['8-1','9-1'];
+    case 'isc': return [...ISC];
+    case 'akatan': return [...AKA];
+    case 'aotan': return [...AO];
+    case 'akaao': return [...AKA,...AO];
+    case 'tane': { let s; do{s=pick(TANE.filter(i=>i!=='9-1'),5);}while(ISC.every(i=>s.includes(i))); return s; }
+    case 'tan': { let s; do{s=pick(TAN,5);}while(AKA.every(i=>s.includes(i))||AO.every(i=>s.includes(i))); return s; }
+    case 'kasu': return pick(KASU,10);
+  }
+}
+function qCard(kind, c){
+  const M=MONTHS[c.m];
+  const exp = `<b>${c.name}</b>（${c.m}月・${M.p}／${TYPES[c.type]}）<br>${c.memo||M.hint}`;
+  if(kind==='month'){
+    const ans=mLabel(c.m), others=pick([1,2,3,4,5,6,7,8,9,10,11,12].filter(m=>m!==c.m),3).map(mLabel);
+    return {q:'この札は何月？',show:[c.id],opts:shuffle([ans,...others]),ans,exp,card:c.id};
+  }
+  if(kind==='type'){
+    const ans=TYPES[c.type];
+    return {q:'この札の種類は？',show:[c.id],opts:['光','タネ','短冊','カス'],ans,exp,card:c.id};
+  }
+  const names=[...new Set(CARDS.map(x=>x.name))].filter(n=>n!==c.name);
+  const near=shuffle(names.filter(n=>n.startsWith(M.p)||CARDS.find(x=>x.name===n).type===c.type));
+  const others=[...new Set([...near.slice(0,2),...shuffle(names)])].slice(0,3);
+  return {q:'この札の名前は？',show:[c.id],opts:shuffle([c.name,...others]),ans:c.name,exp,card:c.id};
+}
+function qYaku(){
+  const y=YAKU[Math.random()*YAKU.length|0], set=yakuSet(y.k);
+  const formed=new Set(evaluate(set,false).map(r=>r[0]));
+  const others=pick(YAKU.filter(o=>!formed.has(o.k)&&o.k!==y.k),3).map(o=>o.n);
+  return {q:'この札でできる役は？',show:set,opts:shuffle([y.n,...others]),ans:y.n,exp:`<b>${y.n}</b>（${y.mon}文）<br>${y.d}`};
+}
+function qMon(){
+  const y=YAKU.filter(y=>!y.plus)[Math.random()*10|0];
+  const ans=y.mon+'文', opts=shuffle([ans,...pick(['1文','3文','5文','7文','8文','10文','15文'].filter(v=>v!==ans),3)]);
+  return {q:`「${y.n}」は何文？`,show:y.ex,yname:y.n,opts,ans,exp:`<b>${y.n}</b>は${y.mon}文。<br>${y.d}`};
+}
+let Q=null;
+function startQuiz(mode){
+  const qs=[];
+  if(mode==='weak'){
+    let pool=CARDS.filter(c=>!isMastered(c.id)); if(!pool.length)pool=CARDS;
+    for(let i=0;i<10;i++) qs.push(qCard(['month','type','name'][i%3], pool[Math.random()*pool.length|0]));
+  } else if(['month','type','name'].includes(mode)){
+    pick(CARDS,10).forEach(c=>qs.push(qCard(mode,c)));
+  } else if(mode==='yaku'){ for(let i=0;i<10;i++)qs.push(qYaku()); }
+  else if(mode==='mon'){ for(let i=0;i<10;i++)qs.push(qMon()); }
+  else { const cs=pick(CARDS,6); const kinds=['month','type','name'];
+    cs.forEach((c,i)=>qs.push(qCard(kinds[i%3],c))); for(let i=0;i<2;i++)qs.push(qYaku()); for(let i=0;i<2;i++)qs.push(qMon()); }
+  Q={mode,qs:mode==='mix'?shuffle(qs):qs,i:0,score:0,miss:[]};
+  $('#quizHome').style.display='none';$('#quizPlay').style.display='';
+  renderQ();
+}
+function renderQ(){
+  const q=Q.qs[Q.i];
+  const show = q.yname?`<div class="ybig">${q.yname}</div>`:
+    q.show.length===1?`<div class="one">${cardSVG(CARD[q.show[0]])}</div>`:q.show.map(i=>`<div class="many">${cardSVG(CARD[i])}</div>`).join('');
+  $('#quizPlay').innerHTML=`<div class="qtop"><span>${Q.i+1} / ${Q.qs.length}</span><span>正解 ${Q.score}</span><button id="qQuit">やめる</button></div>
+   <div class="qbar"><i style="width:${Q.i/Q.qs.length*100}%"></i></div>
+   <p class="qq">${q.q}</p><div class="qshow">${show}</div>
+   <div class="opts">${q.opts.map(o=>`<button class="opt">${o}</button>`).join('')}</div>
+   <div class="fb" id="fb"></div><button class="nextbtn" id="next">${Q.i+1<Q.qs.length?'次の問題':'結果を見る'}</button>`;
+  window.scrollTo({top:0});
+}
+$('#quizPlay').addEventListener('click',e=>{
+  if(e.target.id==='qQuit'){renderQuizHome();return;}
+  if(e.target.id==='next'){Q.i++; Q.i<Q.qs.length?renderQ():renderResult(); return;}
+  const b=e.target.closest('.opt'); if(!b||b.disabled)return;
+  const q=Q.qs[Q.i], ok=b.textContent===q.ans;
+  document.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(x.textContent===q.ans)x.classList.add('ok');});
+  if(!ok)b.classList.add('ng');
+  if(ok)Q.score++; else Q.miss.push(q);
+  if(q.card){ mastery[q.card]=ok?(mastery[q.card]||0)+1:0; store.set('mastery',mastery); }
+  const fb=$('#fb'); fb.className='fb on '+(ok?'good':'bad');
+  fb.innerHTML=`<div class="h">${ok?'⭕ 正解！':'✕ ざんねん… 正解は「'+q.ans+'」'}</div>${q.exp}`;
+  $('#next').classList.add('on');
+});
+function renderResult(){
+  const s=Q.score; if(best[Q.mode]==null||s>best[Q.mode]){best[Q.mode]=s;store.set('best',best);}
+  const msg = s===10?'全問正解！花札名人です 🎴':s>=8?'あと少しで満点！':s>=5?'いい調子。まちがえた札を見直そう':'図鑑を見てからもう一度チャレンジ！';
+  $('#quizPlay').innerHTML=`<div class="result"><div class="sc">${s}<small> / 10</small></div><div class="msg">${msg}</div></div>
+   ${Q.miss.length?'<div class="ygroup">まちがえた問題</div>'+Q.miss.map(q=>`<div class="miss">${q.card?`<div class="mc">${cardSVG(CARD[q.card])}</div>`:''}<div>${q.q}<br><b>${q.ans}</b></div></div>`).join(''):''}
+   <div class="btnrow"><button class="btn" id="rHome">モード選択へ</button><button class="btn primary" id="rAgain">もう一度</button></div>`;
+  $('#rHome').onclick=renderQuizHome; $('#rAgain').onclick=()=>startQuiz(Q.mode);
+  renderFuda();
+}
+
+/* ============ 役チェッカー ============ */
+let sel = new Set(store.get('sel',[]));
+function renderCheck(){
+  const groups=[['hikari',LIGHTS],['tane',TANE],['tan',TAN],['kasu',KASU]];
+  $('#checkGrid').innerHTML=groups.map(([t,arr])=>`<div class="tgroup"><h3>${typeBadge(t)} ${TYPES[t]}札（${arr.length}枚）</h3><div class="grid6">${arr.map(i=>`<button class="pick ${sel.has(i)?'on':''}" data-id="${i}" aria-label="${CARD[i].name}">${cardSVG(CARD[i])}</button>`).join('')}</div></div>`).join('');
+  updateSum();
+}
+function updateSum(){
+  const r=evaluate([...sel],$('#kikuKasu').checked);
+  $('#totMon').textContent=r.reduce((a,b)=>a+b[1],0);
+  $('#selCnt').textContent=sel.size+'枚選択中';
+  $('#ychips').innerHTML=r.length?r.map(([k,v])=>`<span class="ychip">${YK[k].n} ${v}文</span>`).join(''):'<span class="ychip none">まだ役はありません</span>';
+  store.set('sel',[...sel]);
+}
+$('#checkGrid').addEventListener('click',e=>{const b=e.target.closest('.pick');if(!b)return;const i=b.dataset.id;sel.has(i)?sel.delete(i):sel.add(i);b.classList.toggle('on');updateSum();});
+$('#kikuKasu').addEventListener('change',updateSum);
+$('#clrBtn').addEventListener('click',()=>{sel.clear();renderCheck();});
+
+/* ============ タブ ============ */
+const VIEWS=['fuda','yaku','quiz','check'];
+function go(v){
+  if(!VIEWS.includes(v))v='fuda';
+  VIEWS.forEach(x=>$('#v-'+x).classList.toggle('on',x===v));
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  if(v==='quiz' && !Q) renderQuizHome();
+  window.scrollTo({top:0});
+}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b){location.hash=b.dataset.v;}});
+window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
+
+renderFuda(); renderYaku(); renderQuizHome(); renderCheck();
+go(location.hash.slice(1));
+</script>
+</body>
+</html>
