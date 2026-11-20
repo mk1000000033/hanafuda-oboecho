@@ -160,6 +160,27 @@ details.rules ol{padding-left:1.3em;margin:10px 0 0;font-size:13.5px;line-height
 .pick.on{opacity:1;transform:translateY(-3px)}
 .pick.on::after{content:"";position:absolute;inset:-3px;border:2.5px solid var(--shu);border-radius:7px}
 @media (min-width:600px){.cards4{gap:16px}.grid6{grid-template-columns:repeat(8,1fr)}}
+.qmode.game{background:#2d5a3d;border-color:#2d5a3d;color:#fff}
+.qmode.game .d{color:#cfe3d4}
+.qsub{text-align:center;font-size:12.5px;color:var(--sub);margin:-8px 0 12px}
+.table{background:#2d5a3d;border-radius:16px;padding:6px 10px 12px;margin-bottom:12px;box-shadow:inset 0 0 0 3px #244a31}
+.zl{color:#d9e8dc;font-size:11.5px;font-weight:700;letter-spacing:.12em;margin:8px 2px 6px}
+.zrow{display:grid;gap:7px}
+.zrow.field{grid-template-columns:repeat(4,1fr)}
+.zrow.hand{grid-template-columns:repeat(6,1fr)}
+.zrow.cap{grid-template-columns:repeat(8,1fr);gap:4px}
+.zrow.play{display:flex;justify-content:center}
+.scc{border:0;background:none;padding:0;position:relative;border-radius:5px;transition:transform .15s}
+.scc.big{width:86px}
+.scc.tap{cursor:pointer}
+.scc.tap:active{transform:scale(.95)}
+.scc.sel{transform:translateY(-5px)}
+.scc.sel::after,.scc.ok::after,.scc.ng::after,.scc.tgt::after{content:"";position:absolute;inset:-4px;border-radius:7px;border:3px solid #f5c312;pointer-events:none}
+.scc.tgt::after{box-shadow:0 0 12px 2px #f5c312}
+.scc.ok::after{border-color:#62e083;box-shadow:0 0 10px #62e083}
+.scc.ng::after{border-color:#ff5a4f}
+.scc .card-svg{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+@media (min-width:600px){.zrow.field{grid-template-columns:repeat(8,1fr)}}
 </style>
 </head>
 <body>
@@ -410,6 +431,7 @@ $('#yakuList').addEventListener('click',e=>{const b=e.target.closest('.fcell');i
 
 /* ============ クイズ ============ */
 const MODES = [
+  {k:'game',t:'🎴 実戦クイズ',d:'対戦の場面で「どれが取れる？」「どれを出す？」を練習',wide:true,game:true},
   {k:'mix',t:'おまかせミックス',d:'札と役の問題をまぜて10問',wide:true},
   {k:'month',t:'何月の札？',d:'絵を見て月を答える'},
   {k:'type',t:'札の種類は？',d:'光・タネ・短冊・カス'},
@@ -420,7 +442,7 @@ const MODES = [
 ];
 function renderQuizHome(){
   $('#quizHome').style.display='';$('#quizPlay').style.display='none';
-  $('#qmodes').innerHTML=MODES.map(m=>`<button class="qmode ${m.wide?'wide':''}" data-k="${m.k}"><span class="t">${m.t}</span><span class="d">${m.d}</span>${best[m.k]!=null?`<span class="best">ベスト ${best[m.k]}/10</span>`:''}</button>`).join('');
+  $('#qmodes').innerHTML=MODES.map(m=>`<button class="qmode ${m.wide?'wide':''} ${m.game?'game':''}" data-k="${m.k}"><span class="t">${m.t}</span><span class="d">${m.d}</span>${best[m.k]!=null?`<span class="best">ベスト ${best[m.k]}/10</span>`:''}</button>`).join('');
 }
 $('#qmodes').addEventListener('click',e=>{const b=e.target.closest('.qmode');if(b)startQuiz(b.dataset.k);});
 
@@ -468,6 +490,89 @@ function qMon(){
   const ans=y.mon+'文', opts=shuffle([ans,...pick(['1文','3文','5文','7文','8文','10文','15文'].filter(v=>v!==ans),3)]);
   return {q:`「${y.n}」は何文？`,show:y.ex,yname:y.n,opts,ans,exp:`<b>${y.n}</b>は${y.mon}文。<br>${y.d}`};
 }
+
+/* ===== 実戦クイズ（場面） ===== */
+const rnd=a=>a[Math.random()*a.length|0];
+const monthIds=m=>CARDS.filter(c=>c.m===m).map(c=>c.id);
+const mp=m=>`${m}月（${MONTHS[m].p}）`;
+function fillCards(exMonths,n,maxPer=2,exIds=[]){
+  const cnt={},out=[];
+  for(const c of shuffle(CARDS)){ if(out.length>=n)break;
+    if(exMonths.includes(c.m)||exIds.includes(c.id)||(cnt[c.m]||0)>=maxPer)continue;
+    cnt[c.m]=(cnt[c.m]||0)+1; out.push(c.id); }
+  return out;
+}
+function sceneTake(){
+  const p=rnd(CARDS), same=shuffle(monthIds(p.m).filter(i=>i!==p.id));
+  const r=Math.random(), k=r<.2?0:r<.62?1:r<.9?2:3;
+  const ans=same.slice(0,k);
+  const field=shuffle([...ans,...fillCards([p.m],8-k)]);
+  const nm=ans.map(i=>`「${CARD[i].name}」`).join('と');
+  const exp = k===0?`場に${mp(p.m)}の札がないので何も取れず、「${p.name}」は場に置きます。`
+    : k===1?`出した「${p.name}」と同じ${mp(p.m)}の${nm}が取れます。`
+    : k===2?`${mp(p.m)}が2枚あるので、${nm}のどちらか1枚を選んで取ります。点の高い札（光・タネ・短冊）を選ぶのが基本です。`
+    : `場に${mp(p.m)}が3枚！出した札と合わせて4枚まとめて取れます。`;
+  return {scene:'take',q:'この札を出したら、場のどの札が取れる？',sub:'取れる札を全部タップして「決定」',play:p.id,field,ans,exp};
+}
+function sceneWhich(){
+  const t=rnd(CARDS.filter(c=>c.type!=='kasu'));
+  const h=rnd(monthIds(t.m).filter(i=>i!==t.id));
+  const hand=shuffle([h,...fillCards([t.m],5,1)]);
+  const field=shuffle([t.id,...fillCards([t.m],5,1,hand)]);
+  return {scene:'which',q:`光っている「${t.name}」を取りたい。どの手札を出す？`,target:t.id,hand,field,ans:[h],
+    exp:`「${t.name}」は${mp(t.m)}の札。同じ${t.m}月の「${CARD[h].name}」を出せば取れます。`};
+}
+const PARTIALS=[
+  ()=>{const n=rnd(ISC);return ['isc',ISC.filter(i=>i!==n),n];},
+  ()=>{const n=rnd(AKA);return ['akatan',AKA.filter(i=>i!==n),n];},
+  ()=>{const n=rnd(AO);return ['aotan',AO.filter(i=>i!==n),n];},
+  ()=>Math.random()<.5?['hanami',['3-1'],'9-1']:['hanami',['9-1'],'3-1'],
+  ()=>Math.random()<.5?['tsukimi',['8-1'],'9-1']:['tsukimi',['9-1'],'8-1'],
+  ()=>{const s=pick(LIGHTS_NR,3);return ['sanko',s.slice(0,2),s[2]];},
+];
+function sceneYaku(){
+  for(let t=0;t<80;t++){
+    const [yk,have,need]=rnd(PARTIALS)(), N=CARD[need];
+    const extra=fillCards([N.m],6,2,have).filter(i=>CARD[i].type==='kasu').slice(0,3);
+    const captured=[...have,...extra];
+    const base=new Set(evaluate(captured).map(r=>r[0]));
+    if(base.has(yk)||!evaluate([...captured,need]).some(r=>r[0]===yk))continue;
+    const hs=monthIds(N.m).filter(i=>i!==need&&!captured.includes(i)); if(!hs.length)continue;
+    const h=rnd(hs), used=[...captured,need,h];
+    const decoys=fillCards([N.m],5,1,used);
+    const field=[need,...fillCards([N.m],5,1,[...used,...decoys])];
+    let bad=false;
+    for(const d of decoys)for(const f of field) if(CARD[f].m===CARD[d].m && evaluate([...captured,f,d]).some(r=>!base.has(r[0]))) bad=true;
+    if(bad)continue;
+    const Y=YK[yk];
+    return {scene:'yaku',q:'取り札を見て！あと1枚で役ができる。どの手札を出す？',captured,hand:shuffle([h,...decoys]),field:shuffle(field),ans:[h],
+      exp:`「${CARD[h].name}」を出して場の「${N.name}」を取れば<b>${Y.n}</b>（${Y.mon}文）の完成！<br>${Y.d}`};
+  }
+  return sceneWhich();
+}
+function scCard(id,cls){return `<button class="scc ${cls}" data-id="${id}" aria-label="${CARD[id].name}">${cardSVG(CARD[id])}</button>`;}
+function sceneHTML(q){
+  let h=`<p class="qq">${q.q}</p>${q.sub?`<p class="qsub">${q.sub}</p>`:''}<div class="table">`;
+  if(q.captured) h+=`<div class="zl">あなたの取り札</div><div class="zrow cap">${q.captured.map(i=>`<div class="scc">${cardSVG(CARD[i])}</div>`).join('')}</div>`;
+  h+=`<div class="zl">場</div><div class="zrow field">${q.field.map(i=>scCard(i,(q.target===i?'tgt ':'')+(q.scene==='take'?'tap':''))).join('')}</div>`;
+  if(q.scene==='take') h+=`<div class="zl">出す札</div><div class="zrow play"><div class="scc big">${cardSVG(CARD[q.play])}</div></div>`;
+  else h+=`<div class="zl">あなたの手札</div><div class="zrow hand">${q.hand.map(i=>scCard(i,'tap')).join('')}</div>`;
+  h+=`</div>`;
+  if(q.scene==='take') h+=`<div class="btnrow" id="takeBtns" style="margin-top:0"><button class="btn" id="noneBtn">取れる札はない</button><button class="btn primary" id="okBtn">決定</button></div>`;
+  return h;
+}
+function submitScene(sel){
+  const q=Q.qs[Q.i]; Q.answered=true;
+  const ok=sel.length===q.ans.length&&sel.every(i=>q.ans.includes(i));
+  document.querySelectorAll('.scc.tap').forEach(x=>{const id=x.dataset.id;x.classList.remove('sel');
+    if(q.ans.includes(id))x.classList.add('ok'); else if(sel.includes(id))x.classList.add('ng');});
+  const tb=$('#takeBtns'); if(tb)tb.style.display='none';
+  const ansTxt=q.ans.length?q.ans.map(i=>CARD[i].name).join('・'):'取れる札はない';
+  if(ok)Q.score++; else Q.miss.push({q:q.q,ans:ansTxt,img:q.ans[0]||q.play});
+  const fb=$('#fb'); fb.className='fb on '+(ok?'good':'bad');
+  fb.innerHTML=`<div class="h">${ok?'⭕ 正解！':'✕ ざんねん… 正解は「'+ansTxt+'」'}</div>${q.exp}`;
+  $('#next').classList.add('on'); $('#next').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 let Q=null;
 function startQuiz(mode){
   const qs=[];
@@ -478,14 +583,19 @@ function startQuiz(mode){
     pick(CARDS,10).forEach(c=>qs.push(qCard(mode,c)));
   } else if(mode==='yaku'){ for(let i=0;i<10;i++)qs.push(qYaku()); }
   else if(mode==='mon'){ for(let i=0;i<10;i++)qs.push(qMon()); }
+  else if(mode==='game'){ for(let i=0;i<4;i++)qs.push(sceneTake()); for(let i=0;i<3;i++)qs.push(sceneWhich()); for(let i=0;i<3;i++)qs.push(sceneYaku()); }
   else { const cs=pick(CARDS,6); const kinds=['month','type','name'];
     cs.forEach((c,i)=>qs.push(qCard(kinds[i%3],c))); for(let i=0;i<2;i++)qs.push(qYaku()); for(let i=0;i<2;i++)qs.push(qMon()); }
-  Q={mode,qs:mode==='mix'?shuffle(qs):qs,i:0,score:0,miss:[]};
+  Q={mode,qs:mode==='mix'||mode==='game'?shuffle(qs):qs,i:0,score:0,miss:[]};
   $('#quizHome').style.display='none';$('#quizPlay').style.display='';
   renderQ();
 }
 function renderQ(){
-  const q=Q.qs[Q.i];
+  const q=Q.qs[Q.i]; Q.answered=false; Q.sel=[];
+  const head=`<div class="qtop"><span>${Q.i+1} / ${Q.qs.length}</span><span>正解 ${Q.score}</span><button id="qQuit">やめる</button></div>
+   <div class="qbar"><i style="width:${Q.i/Q.qs.length*100}%"></i></div>`;
+  const tail=`<div class="fb" id="fb"></div><button class="nextbtn" id="next">${Q.i+1<Q.qs.length?'次の問題':'結果を見る'}</button>`;
+  if(q.scene){ $('#quizPlay').innerHTML=head+sceneHTML(q)+tail; window.scrollTo({top:0}); return; }
   const show = q.yname?`<div class="ybig">${q.yname}</div>`:
     q.show.length===1?`<div class="one">${cardSVG(CARD[q.show[0]])}</div>`:q.show.map(i=>`<div class="many">${cardSVG(CARD[i])}</div>`).join('');
   $('#quizPlay').innerHTML=`<div class="qtop"><span>${Q.i+1} / ${Q.qs.length}</span><span>正解 ${Q.score}</span><button id="qQuit">やめる</button></div>
@@ -498,6 +608,17 @@ function renderQ(){
 $('#quizPlay').addEventListener('click',e=>{
   if(e.target.id==='qQuit'){renderQuizHome();return;}
   if(e.target.id==='next'){Q.i++; Q.i<Q.qs.length?renderQ():renderResult(); return;}
+  if(Q.qs[Q.i].scene){
+    if(Q.answered)return;
+    const q=Q.qs[Q.i], c=e.target.closest('.scc.tap');
+    if(c){ const id=c.dataset.id;
+      if(q.scene==='take'){ Q.sel=Q.sel.includes(id)?Q.sel.filter(x=>x!==id):[...Q.sel,id]; c.classList.toggle('sel'); }
+      else submitScene([id]);
+      return; }
+    if(e.target.id==='okBtn'){ if(!Q.sel.length){ $('#okBtn').textContent='札を選んでね'; setTimeout(()=>{const b=$('#okBtn');if(b)b.textContent='決定';},1200); return;} submitScene(Q.sel); }
+    if(e.target.id==='noneBtn') submitScene([]);
+    return;
+  }
   const b=e.target.closest('.opt'); if(!b||b.disabled)return;
   const q=Q.qs[Q.i], ok=b.textContent===q.ans;
   document.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(x.textContent===q.ans)x.classList.add('ok');});
@@ -512,7 +633,7 @@ function renderResult(){
   const s=Q.score; if(best[Q.mode]==null||s>best[Q.mode]){best[Q.mode]=s;store.set('best',best);}
   const msg = s===10?'全問正解！花札名人です 🎴':s>=8?'あと少しで満点！':s>=5?'いい調子。まちがえた札を見直そう':'図鑑を見てからもう一度チャレンジ！';
   $('#quizPlay').innerHTML=`<div class="result"><div class="sc">${s}<small> / 10</small></div><div class="msg">${msg}</div></div>
-   ${Q.miss.length?'<div class="ygroup">まちがえた問題</div>'+Q.miss.map(q=>`<div class="miss">${q.card?`<div class="mc">${cardSVG(CARD[q.card])}</div>`:''}<div>${q.q}<br><b>${q.ans}</b></div></div>`).join(''):''}
+   ${Q.miss.length?'<div class="ygroup">まちがえた問題</div>'+Q.miss.map(q=>`<div class="miss">${(q.card||q.img)?`<div class="mc">${cardSVG(CARD[q.card||q.img])}</div>`:''}<div>${q.q}<br><b>${q.ans}</b></div></div>`).join(''):''}
    <div class="btnrow"><button class="btn" id="rHome">モード選択へ</button><button class="btn primary" id="rAgain">もう一度</button></div>`;
   $('#rHome').onclick=renderQuizHome; $('#rAgain').onclick=()=>startQuiz(Q.mode);
   renderFuda();
